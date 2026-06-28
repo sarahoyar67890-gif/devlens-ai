@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DevLens AI — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06070d;--card:rgba(255,255,255,.04);--card-h:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.08);--border-b:rgba(255,255,255,.15);
+  --text:#f0f2ff;--text2:rgba(240,242,255,.55);--muted:rgba(240,242,255,.3);
+  --acc:#7c6ff7;--acc2:#a78bfa;--glow:rgba(124,111,247,.3);
+  --green:#34d399;--yellow:#fbbf24;--red:#f87171;--mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow:hidden}
+.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
+.o1{width:500px;height:500px;background:rgba(124,111,247,.1);top:-150px;right:-100px}
+.o2{width:400px;height:400px;background:rgba(52,211,153,.06);bottom:-150px;left:-80px}
+/* Sidebar */
+.sb{width:230px;min-height:100vh;flex-shrink:0;background:rgba(6,7,13,.9);border-right:1px solid var(--border);
+  backdrop-filter:blur(20px);display:flex;flex-direction:column;padding:1.5rem 1rem;
+  position:fixed;left:0;top:0;bottom:0;z-index:50}
+.sbr{display:flex;align-items:center;gap:.5rem;font-size:1.1rem;font-weight:700;padding:.5rem;margin-bottom:2rem}
+.bi{color:var(--acc);font-size:1.4rem}.bai{color:var(--acc)}
+.sbn{display:flex;flex-direction:column;gap:.2rem;flex:1}
+.sl{display:flex;align-items:center;gap:.75rem;padding:.65rem .75rem;border-radius:10px;
+  color:var(--text2);text-decoration:none;font-size:.88rem;cursor:pointer;transition:all .2s;border:none;background:none;width:100%;text-align:left}
+.sl:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.sl.active{background:rgba(124,111,247,.15);color:var(--acc2)}
+.sli{font-size:1rem;opacity:.7}
+.sbk{color:var(--muted);text-decoration:none;font-size:.82rem;padding:.5rem .75rem;border-radius:8px;transition:color .2s;margin-top:1rem}
+.sbk:hover{color:var(--text2)}
+/* Main */
+.main{margin-left:230px;flex:1;min-height:100vh;padding:2rem 2.5rem;overflow-y:auto;position:relative;z-index:1}
+/* States */
+.ld,.er{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:1rem;text-align:center}
+.spin{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.er-icon{font-size:3rem;color:var(--yellow)}
+/* Sections */
+.sec{animation:fi .4s ease}
+@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.sh{font-size:1.5rem;font-weight:700;margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+.ssh{font-size:1rem;font-weight:600;color:var(--text2);margin-bottom:1rem;margin-top:2rem}
+/* Profile */
+.ph{display:flex;gap:1.5rem;align-items:flex-start;margin-bottom:2rem;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2rem}
+.av{width:90px;height:90px;border-radius:50%;border:2px solid var(--border-b)}
+.pn{font-size:1.6rem;font-weight:700}
+.pu{color:var(--acc2);font-family:var(--mono);font-size:.9rem;margin:.25rem 0}
+.pb{color:var(--text2);font-size:.9rem;margin:.5rem 0;max-width:500px;line-height:1.5}
+.pm{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.5rem}
+.pm span{font-size:.8rem;color:var(--muted)}
+/* Stats */
+.sr{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1rem;margin-bottom:1.5rem}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center}
+.sv{font-size:1.8rem;font-weight:700;color:var(--acc2)}
+.sk{font-size:.75rem;color:var(--muted);margin-top:.25rem;text-transform:uppercase;letter-spacing:.05em}
+/* AI Summary */
+.ai-box{background:linear-gradient(135deg,rgba(124,111,247,.08),rgba(167,139,250,.04));
+  border:1px solid rgba(124,111,247,.2);border-radius:16px;padding:1.5rem;margin-bottom:2rem}
+.ai-lbl{font-size:.75rem;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem}
+.ai-txt{color:var(--text2);font-size:.9rem;line-height:1.8;white-space:pre-wrap}
+/* Charts */
+.cw{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem}
+/* Skills */
+.skl{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+.ski{display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem}
+.skn{font-size:.85rem;color:var(--text2);width:140px;flex-shrink:0}
+.skbw{flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.skbf{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:3px;transition:width 1s ease}
+.skp{font-size:.8rem;color:var(--acc2);font-family:var(--mono);width:35px;text-align:right}
+/* Ranking tabs */
+.rt{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+.rtb{background:var(--card);border:1px solid var(--border);color:var(--text2);
+  padding:.45rem .9rem;border-radius:8px;cursor:pointer;font-size:.82rem;transition:all .2s;font-family:'Inter',sans-serif}
+.rtb.active{background:rgba(124,111,247,.2);border-color:var(--acc);color:var(--acc2)}
+/* Repo cards */
+.rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.rc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;cursor:pointer;transition:all .2s}
+.rc:hover{background:var(--card-h);border-color:var(--border-b);transform:translateY(-2px)}
+.rcn{font-weight:600;font-size:.95rem;margin-bottom:.4rem;color:var(--acc2)}
+.rcd{font-size:.8rem;color:var(--text2);line-height:1.5;margin-bottom:.75rem;min-height:36px}
+.rcm{display:flex;gap:.75rem;font-size:.75rem;color:var(--muted);flex-wrap:wrap}
+.tag{background:rgba(124,111,247,.1);color:var(--acc2);padding:.2rem .5rem;border-radius:4px;font-size:.72rem}
+.sbdg{font-size:.72rem;padding:.2rem .5rem;border-radius:4px;background:rgba(52,211,153,.1);color:var(--green);font-family:var(--mono)}
+/* Internship */
+.ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:2rem}
+.ic{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center}
+.ir{font-size:.8rem;color:var(--text2);margin-bottom:.5rem;font-weight:500}
+.isc{width:72px;height:72px;border-radius:50%;border:3px solid var(--acc);margin:.5rem auto;
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:var(--acc2)}
+.irn{font-size:.72rem;color:var(--muted);margin-top:.5rem;line-height:1.4}
+/* Roadmap */
+.rf{background:linear-gradient(135deg,rgba(124,111,247,.1),rgba(52,211,153,.05));
+  border:1px solid rgba(124,111,247,.2);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem}
+.rfl{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--acc);margin-bottom:.4rem}
+.rfr{font-size:1.3rem;font-weight:700}
+.rmg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem}
+.rms{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem}
+.rmst{font-size:.8rem;font-weight:600;color:var(--acc2);margin-bottom:.4rem}
+.rmsd{font-size:.8rem;color:var(--text2);line-height:1.5}
+.tl{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem}
+.tlp{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.9rem}
+.tlpr{font-size:.72rem;color:var(--acc);font-family:var(--mono);margin-bottom:.4rem}
+.tlpd{font-size:.8rem;color:var(--text2);line-height:1.4}
+.rsc{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+.rsr{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;display:flex;gap:.75rem}
+.rst{font-size:.7rem;padding:.2rem .5rem;border-radius:4px;background:rgba(124,111,247,.15);color:var(--acc2);align-self:flex-start;white-space:nowrap}
+.rsn{font-size:.85rem;color:var(--text2);line-height:1.4}
+/* Timeline events */
+.tev{display:flex;flex-direction:column;gap:.5rem;max-height:300px;overflow-y:auto;margin-top:1.5rem}
+.te{display:flex;gap:1rem;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.65rem 1rem;font-size:.82rem}
+.ted{color:var(--muted);font-family:var(--mono);width:100px;flex-shrink:0}
+.ten{color:var(--text2)}
+.tel{color:var(--acc2);font-size:.75rem}
+/* Search */
+.srow{display:flex;gap:.75rem;margin-bottom:1.5rem}
+.sri{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);padding:.75rem 1rem;font-size:.9rem;outline:none;transition:border-color .2s;font-family:'Inter',sans-serif}
+.sri:focus{border-color:var(--acc)}
+.btn{display:inline-flex;align-items:center;gap:.5rem;background:var(--acc);color:#fff;border:none;
+  padding:.65rem 1.25rem;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:600;transition:background .2s;font-family:'Inter',sans-serif}
+.btn:hover{background:var(--acc2)}
+/* Modal */
+.mo{position:fixed;inset:0;z-index:1000;background:rgba(6,7,13,.85);backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;padding:2rem}
+.mb{background:#0e0f1a;border:1px solid var(--border-b);border-radius:20px;width:100%;max-width:680px;max-height:80vh;overflow-y:auto;display:flex;flex-direction:column}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:1.5rem;border-bottom:1px solid var(--border)}
+.mt{font-size:1.2rem;font-weight:700;color:var(--acc2)}
+.mc{background:none;border:none;color:var(--muted);font-size:1.25rem;cursor:pointer}
+.mc:hover{color:var(--text)}
+.mbd{padding:1.5rem;flex:1}
+.mf{padding:1rem 1.5rem;border-top:1px solid var(--border)}
+.mrl{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--acc);margin-bottom:.3rem}
+.mrv{font-size:.9rem;color:var(--text2);line-height:1.5;margin-bottom:1rem}
+.msc{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1rem}
+.ms{text-align:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem}
+.msv{font-size:1.3rem;font-weight:700;color:var(--acc2)}
+.msl{font-size:.7rem;color:var(--muted)}
+.ro{margin-top:1rem}
+.ro pre{background:#0a0b10;border:1px solid var(--border);border-radius:10px;padding:1rem;color:var(--text2);
+  font-family:var(--mono);font-size:.8rem;white-space:pre-wrap;word-break:break-word;max-height:350px;overflow-y:auto}
+.btn2{background:rgba(124,111,247,.1);color:var(--acc2);border:1px solid rgba(124,111,247,.3);
+  padding:.65rem 1.25rem;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:600;transition:background .2s;font-family:'Inter',sans-serif}
+.btn2:hover{background:rgba(124,111,247,.2)}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:rgba(124,111,247,.3);border-radius:3px}
+@media(max-width:768px){.sb{width:60px}.sbr span:not(.bi){display:none}.sl span:not(.sli){display:none}.main{margin-left:60px;padding:1.5rem 1rem}.skl{grid-template-columns:1fr}.ph{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="orb o1"></div>
+<div class="orb o2"></div>
+
+<aside class="sb">
+  <div class="sbr"><span class="bi">⬡</span><span>DevLens <span class="bai">AI</span></span></div>
+  <nav class="sbn">
+    <button class="sl active" onclick="show('overview',this)"><span class="sli">⊕</span><span>Overview</span></button>
+    <button class="sl" onclick="show('skills',this)"><span class="sli">◈</span><span>Skills & Radar</span></button>
+    <button class="sl" onclick="show('repos',this)"><span class="sli">▦</span><span>Repositories</span></button>
+    <button class="sl" onclick="show('intern',this)"><span class="sli">◉</span><span>Internship</span></button>
+    <button class="sl" onclick="show('roadmap',this)"><span class="sli">↗</span><span>Roadmap</span></button>
+    <button class="sl" onclick="show('timeline',this)"><span class="sli">◷</span><span>Timeline</span></button>
+    <button class="sl" onclick="show('search',this)"><span class="sli">⌕</span><span>Search</span></button>
+  </nav>
+  <a href="/" class="sbk">← New Analysis</a>
+</aside>
+
+<main class="main">
+  <div class="ld" id="LD"><div class="spin"></div><p style="color:var(--text2)">Loading analysis...</p></div>
+  <div class="er" id="ER" style="display:none">
+    <div class="er-icon">⚠</div><h2>Not found</h2>
+    <p id="ERMSG" style="color:var(--text2)">Analyze this profile first.</p>
+    <a href="/" class="btn">← Analyze Profile</a>
+  </div>
+  <div id="DASH" style="display:none">
+
+    <!-- Overview -->
+    <div class="sec" id="s-overview">
+      <div class="ph">
+        <img class="av" id="AV" src="" alt=""/>
+        <div>
+          <div class="pn" id="PN"></div>
+          <div class="pu" id="PU"></div>
+          <div class="pb" id="PB"></div>
+          <div class="pm" id="PM"></div>
+        </div>
+      </div>
+      <div class="sr" id="SR"></div>
+      <div class="ai-box"><div class="ai-lbl">⬡ AI Developer Profile</div><div class="ai-txt" id="AIS"></div></div>
+      <div class="ssh">Language Breakdown</div>
+      <div class="cw"><canvas id="LC" height="280"></canvas></div>
+    </div>
+
+    <!-- Skills -->
+    <div class="sec" id="s-skills" style="display:none">
+      <div class="sh">Skills & Radar</div>
+      <div class="skl">
+        <div class="cw"><canvas id="RC" height="380"></canvas></div>
+        <div id="SKL"></div>
+      </div>
+    </div>
+
+    <!-- Repos -->
+    <div class="sec" id="s-repos" style="display:none">
+      <div class="sh">Repository Analysis</div>
+      <div class="rt">
+        <button class="rtb active" onclick="rank('best_overall',this)">Best Overall</button>
+        <button class="rtb" onclick="rank('most_popular',this)">Most Popular</button>
+        <button class="rtb" onclick="rank('most_complex',this)">Most Complex</button>
+        <button class="rtb" onclick="rank('best_documented',this)">Best Documented</button>
+        <button class="rtb" onclick="rank('most_original',this)">Most Original</button>
+      </div>
+      <div class="rg" id="RNKC"></div>
+      <div class="ssh">All Repositories</div>
+      <div class="rg" id="RG"></div>
+    </div>
+
+    <!-- Internship -->
+    <div class="sec" id="s-intern" style="display:none">
+      <div class="sh">Internship Readiness</div>
+      <div class="ig" id="IG"></div>
+      <div class="cw"><canvas id="IC" height="300"></canvas></div>
+    </div>
+
+    <!-- Roadmap -->
+    <div class="sec" id="s-roadmap" style="display:none">
+      <div class="sh">Career Roadmap</div>
+      <div class="rf"><div class="rfl">Recommended Focus</div><div class="rfr" id="RFF"></div></div>
+      <div class="rmg" id="RMG"></div>
+      <div class="ssh">Timeline</div>
+      <div class="tl" id="RTL"></div>
+      <div class="ssh">Resources</div>
+      <div class="rsc" id="RSC"></div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="sec" id="s-timeline" style="display:none">
+      <div class="sh">Developer Timeline</div>
+      <div class="cw"><canvas id="TC" height="300"></canvas></div>
+      <div class="tev" id="TEV"></div>
+    </div>
+
+    <!-- Search -->
+    <div class="sec" id="s-search" style="display:none">
+      <div class="sh">Search Repositories</div>
+      <div class="srow">
+        <input class="sri" id="SRI" placeholder='Try "machine learning" or "FastAPI"...' onkeydown="if(event.key==='Enter')srch()"/>
+        <button class="btn" onclick="srch()">Search</button>
+      </div>
+      <div class="rg" id="SRR"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="mo" id="MO" onclick="if(event.target.id==='MO')closeMo()">
+  <div class="mb">
+    <div class="mh"><span class="mt" id="MOT"></span><button class="mc" onclick="closeMo()">✕</button></div>
+    <div class="mbd" id="MOB"></div>
+    <div class="mf">
+      <button class="btn2" onclick="genRM()">⬡ Generate README</button>
+      <div class="ro" id="ROW" style="display:none"><pre id="ROT"></pre></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────
+const UN = window.location.pathname.split('/').pop();
+let D = null, CR = null, RNK = {};
+
+// ── Boot ──────────────────────────────────────────────────────
+(async()=>{
+  try{
+    const r=await fetch('/api/result/'+UN);
+    if(!r.ok){const j=await r.json();throw new Error(j.detail||'Not found')}
+    const j=await r.json();D=j.data;
+    document.getElementById('LD').style.display='none';
+    document.getElementById('DASH').style.display='block';
+    render(D);
+  }catch(e){
+    document.getElementById('LD').style.display='none';
+    document.getElementById('ER').style.display='flex';
+    document.getElementById('ERMSG').textContent=e.message;
+  }
+})();
+
+// ── Nav ───────────────────────────────────────────────────────
+function show(id,btn){
+  document.querySelectorAll('.sec').forEach(s=>s.style.display='none');
+  document.getElementById('s-'+id).style.display='block';
+  document.querySelectorAll('.sl').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+}
+
+// ── Render all ────────────────────────────────────────────────
+function render(d){
+  rProfile(d);rStats(d);rAI(d);rLang(d);rRadar(d);rSkills(d);
+  rRepos(d);rIntern(d);rRoadmap(d);rTimeline(d);
+}
+
+// ── Profile ───────────────────────────────────────────────────
+function rProfile(d){
+  const p=d.profile||{};
+  document.getElementById('AV').src=p.avatar_url||'';
+  document.getElementById('PN').textContent=p.name||p.username||'';
+  document.getElementById('PU').textContent='@'+(p.username||'');
+  document.getElementById('PB').textContent=p.bio||'';
+  document.getElementById('PM').innerHTML=[
+    p.location&&`<span>📍 ${p.location}</span>`,
+    p.company&&`<span>🏢 ${p.company}</span>`,
+    p.blog&&`<span>🔗 <a href="${p.blog}" target="_blank" style="color:var(--acc2)">${p.blog}</a></span>`,
+  ].filter(Boolean).join('');
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+function rStats(d){
+  const p=d.profile||{};
+  const total_commits=(d.repos||[]).reduce((s,r)=>s+(r.commit_count||0),0);
+  const stats=[
+    {v:d.total_repos||0,l:'Repos'},{v:d.total_stars||0,l:'Stars'},
+    {v:d.total_forks||0,l:'Forks'},{v:p.followers||0,l:'Followers'},
+    {v:(d.top_languages||[]).length,l:'Languages'},{v:total_commits,l:'Commits'},
+  ];
+  document.getElementById('SR').innerHTML=stats.map(s=>`<div class="sc"><div class="sv">${s.v}</div><div class="sk">${s.l}</div></div>`).join('');
+}
+
+// ── AI Summary ────────────────────────────────────────────────
+function rAI(d){document.getElementById('AIS').textContent=d.ai_summary||'No summary available.'}
+
+// ── Language doughnut ─────────────────────────────────────────
+function rLang(d){
+  const langs=d.languages_breakdown||{};
+  const top=Object.entries(langs).slice(0,8);
+  if(!top.length)return;
+  const COLORS=['#7c6ff7','#a78bfa','#34d399','#fbbf24','#f87171','#60a5fa','#c4b5fd','#6ee7b7'];
+  new Chart(document.getElementById('LC').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:top.map(([l])=>l),datasets:[{data:top.map(([,v])=>v),backgroundColor:COLORS,borderWidth:2,borderColor:'#06070d'}]},
+    options:{responsive:true,maintainAspectRatio:true,cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#f0f2ff',font:{size:12}}}}}
+  });
+}
+
+// ── Radar ─────────────────────────────────────────────────────
+function rRadar(d){
+  const r=d.radar||{};
+  const labels=Object.keys(r),vals=Object.values(r);
+  if(!labels.length)return;
+  new Chart(document.getElementById('RC').getContext('2d'),{
+    type:'radar',
+    data:{labels,datasets:[{label:'Skill Level',data:vals,backgroundColor:'rgba(124,111,247,.15)',borderColor:'#7c6ff7',pointBackgroundColor:'#a78bfa',pointRadius:4,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:true,scales:{r:{min:0,max:100,ticks:{color:'#555',stepSize:20,backdropColor:'transparent'},grid:{color:'rgba(255,255,255,.06)'},angleLines:{color:'rgba(255,255,255,.06)'},pointLabels:{color:'#a0a0c0',font:{size:11}}}},plugins:{legend:{display:false}}}
+  });
+}
+
+// ── Skills list ───────────────────────────────────────────────
+function rSkills(d){
+  const sk=d.skills||{};
+  document.getElementById('SKL').innerHTML=Object.entries(sk).slice(0,20).map(([n,s])=>`
+    <div class="ski">
+      <span class="skn">${n}</span>
+      <div class="skbw"><div class="skbf" style="width:${s}%"></div></div>
+      <span class="skp">${s}%</span>
+    </div>`).join('');
+}
+
+// ── Repos ─────────────────────────────────────────────────────
+function rRepos(d){
+  RNK=d.repo_rankings||{};
+  rank('best_overall',document.querySelector('.rtb'));
+  document.getElementById('RG').innerHTML=(d.repos||[]).map(r=>rCard(r,false)).join('');
+}
+function rank(key,btn){
+  document.querySelectorAll('.rtb').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  document.getElementById('RNKC').innerHTML=(RNK[key]||[]).map(r=>rCard(r,true)).join('');
+}
+function rCard(r,ranked){
+  const a=r.analysis||{};
+  const tags=(a.tech_tags||[]).slice(0,3).map(t=>`<span class="tag">${t}</span>`).join('');
+  const scores=ranked?`<div style="display:flex;gap:.5rem;margin-top:.6rem">
+    <span class="sbdg">Complexity ${a.complexity||'—'}/10</span>
+    <span class="sbdg">Quality ${a.code_quality||'—'}/10</span>
+    <span class="sbdg">Docs ${a.documentation_score||'—'}/10</span>
+  </div>`:'';
+  return `<div class="rc" onclick='openMo(${JSON.stringify(JSON.stringify(r))})'>
+    <div class="rcn">${r.name}</div>
+    <div class="rcd">${r.description||a.purpose||'No description'}</div>
+    <div class="rcm">${r.language?`<span>⬡ ${r.language}</span>`:''}<span>★ ${r.stars||0}</span><span>⑂ ${r.forks||0}</span></div>
+    <div style="margin-top:.5rem">${tags}</div>${scores}
+  </div>`;
+}
+
+// ── Modal ─────────────────────────────────────────────────────
+function openMo(js){
+  CR=JSON.parse(js);const a=CR.analysis||{};
+  document.getElementById('MOT').textContent=CR.name;
+  document.getElementById('ROW').style.display='none';
+  document.getElementById('MOB').innerHTML=`
+    <div class="mrl">Purpose</div><div class="mrv">${a.purpose||CR.description||'Unknown'}</div>
+    <div class="mrl">Architecture</div><div class="mrv">${a.architecture||'N/A'}</div>
+    <div class="mrl">Summary</div><div class="mrv">${a.summary||'N/A'}</div>
+    <div class="mrl">Difficulty</div><div class="mrv">${a.difficulty_level||'N/A'}</div>
+    <div class="mrl">Tech Stack</div><div class="mrv">${(a.tech_tags||[]).join(', ')||CR.language||'N/A'}</div>
+    <div class="msc">
+      ${[['Complexity',a.complexity],['Code Quality',a.code_quality],['Documentation',a.documentation_score],['Originality',a.originality],['Maintainability',a.maintainability],['Learning Value',a.learning_value]].map(([l,v])=>`<div class="ms"><div class="msv">${v??'—'}</div><div class="msl">${l}</div></div>`).join('')}
+    </div>
+    ${CR.url?`<div style="margin-top:1rem"><a href="${CR.url}" target="_blank" class="btn2" style="text-decoration:none">View on GitHub →</a></div>`:''}
+  `;
+  document.getElementById('MO').style.display='flex';
+}
+function closeMo(){document.getElementById('MO').style.display='none'}
+async function genRM(){
+  if(!CR)return;
+  const btn=document.querySelector('.mf .btn2');
+  btn.textContent='Generating...';btn.disabled=true;
+  try{
+    const r=await fetch(`/api/readme/${UN}/${CR.name}`,{method:'POST'});
+    const j=await r.json();
+    document.getElementById('ROT').textContent=j.readme||'No content.';
+    document.getElementById('ROW').style.display='block';
+  }catch(e){alert('Failed: '+e.message);}
+  finally{btn.textContent='⬡ Generate README';btn.disabled=false;}
+}
+
+// ── Internship ────────────────────────────────────────────────
+function rIntern(d){
+  const roles=d.internship_readiness||{};
+  document.getElementById('IG').innerHTML=Object.entries(roles).map(([role,info])=>{
+    const s=info.score;
+    const c=s>=70?'var(--green)':s>=45?'var(--yellow)':'var(--red)';
+    return `<div class="ic">
+      <div class="ir">${role}</div>
+      <div class="isc" style="border-color:${c};color:${c}">${s}</div>
+      <div class="irn">${info.reason}</div>
+    </div>`;
+  }).join('');
+  const entries=Object.entries(roles);
+  new Chart(document.getElementById('IC').getContext('2d'),{
+    type:'bar',
+    data:{labels:entries.map(([r])=>r),datasets:[{label:'Readiness Score',data:entries.map(([,v])=>v.score),backgroundColor:entries.map(([,v])=>v.score>=70?'rgba(52,211,153,.4)':v.score>=45?'rgba(251,191,36,.4)':'rgba(248,113,113,.4)'),borderColor:entries.map(([,v])=>v.score>=70?'#34d399':v.score>=45?'#fbbf24':'#f87171'),borderWidth:2,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:true,scales:{y:{min:0,max:100,ticks:{color:'#888'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#888',maxRotation:30},grid:{display:false}}},plugins:{legend:{display:false}}}
+  });
+}
+
+// ── Roadmap ───────────────────────────────────────────────────
+function rRoadmap(d){
+  const rm=d.career_roadmap||{};
+  document.getElementById('RFF').textContent='→ '+(rm.recommended_focus||'Developer');
+  document.getElementById('RMG').innerHTML=(rm.next_steps||[]).map(s=>`<div class="rms"><div class="rmst">Next Step</div><div class="rmsd">${s}</div></div>`).join('');
+  document.getElementById('RTL').innerHTML=Object.entries(rm.timeline_months||{}).map(([p,desc])=>`<div class="tlp"><div class="tlpr">${p} months</div><div class="tlpd">${desc}</div></div>`).join('');
+  document.getElementById('RSC').innerHTML=(rm.resources||[]).map(r=>`<div class="rsr"><span class="rst">${r.type}</span><div class="rsn">${r.title}</div></div>`).join('');
+}
+
+// ── Timeline ──────────────────────────────────────────────────
+function rTimeline(d){
+  const events=d.timeline||[];
+  if(!events.length)return;
+  const byYear={};
+  events.forEach(e=>{const y=e.date?.slice(0,4);if(y)byYear[y]=(byYear[y]||0)+1});
+  const years=Object.keys(byYear).sort();
+  new Chart(document.getElementById('TC').getContext('2d'),{
+    type:'line',
+    data:{labels:years,datasets:[{label:'Repos Created',data:years.map(y=>byYear[y]),borderColor:'#7c6ff7',backgroundColor:'rgba(124,111,247,.1)',fill:true,tension:.4,pointBackgroundColor:'#a78bfa',pointRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:true,scales:{y:{ticks:{color:'#888'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#888'},grid:{display:false}}},plugins:{legend:{labels:{color:'#ccc'}}}}
+  });
+  document.getElementById('TEV').innerHTML=events.slice(0,30).map(e=>`
+    <div class="te">
+      <span class="ted">${e.date}</span>
+      <span class="ten">${e.event}</span>
+      <span class="tel">${e.language||''}</span>
+    </div>`).join('');
+}
+
+// ── Search ────────────────────────────────────────────────────
+async function srch(){
+  const q=document.getElementById('SRI').value.trim();
+  if(!q)return;
+  try{
+    const r=await fetch(`/api/search/${UN}?q=${encodeURIComponent(q)}`);
+    const j=await r.json();
+    const res=j.results||[];
+    document.getElementById('SRR').innerHTML=res.length?res.map(r=>rCard(r,false)).join(''):`<p style="color:var(--muted);padding:1rem">No repos found for "${q}"</p>`;
+  }catch(e){document.getElementById('SRR').innerHTML=`<p style="color:var(--red)">Search failed: ${e.message}</p>`;}
+}
+</script>
+</body>
+</html>

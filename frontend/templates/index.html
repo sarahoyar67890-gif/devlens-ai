@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DevLens AI — GitHub Portfolio Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06070d;--card:rgba(255,255,255,.04);--card-h:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.08);--border-b:rgba(255,255,255,.15);
+  --text:#f0f2ff;--text2:rgba(240,242,255,.55);--muted:rgba(240,242,255,.3);
+  --acc:#7c6ff7;--acc2:#a78bfa;--glow:rgba(124,111,247,.3);
+  --green:#34d399;--mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.bg-grid{position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(124,111,247,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(124,111,247,.04) 1px,transparent 1px);
+  background-size:60px 60px;pointer-events:none}
+.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
+.o1{width:600px;height:600px;background:rgba(124,111,247,.12);top:-200px;right:-150px}
+.o2{width:500px;height:500px;background:rgba(52,211,153,.07);bottom:-200px;left:-100px}
+.o3{width:400px;height:400px;background:rgba(167,139,250,.08);top:40%;left:40%}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 2.5rem;background:rgba(6,7,13,.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nb{display:flex;align-items:center;gap:.5rem;font-weight:600;font-size:1.1rem}
+.bi{color:var(--acc);font-size:1.4rem}.bai{color:var(--acc)}
+.nl{display:flex;gap:2rem}
+.nl a{color:var(--text2);text-decoration:none;font-size:.9rem;transition:color .2s}
+.nl a:hover{color:var(--text)}
+.hero{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 4rem}
+.badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(124,111,247,.12);
+  border:1px solid rgba(124,111,247,.3);border-radius:100px;padding:.4rem 1rem;
+  font-size:.8rem;color:var(--acc2);margin-bottom:2rem}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+h1{font-size:clamp(2.8rem,7vw,5rem);font-weight:700;line-height:1.1;letter-spacing:-.03em;margin-bottom:1.5rem}
+.gt{background:linear-gradient(135deg,var(--acc) 0%,var(--acc2) 50%,#c4b5fd 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{font-size:1.1rem;color:var(--text2);line-height:1.7;max-width:520px;margin:0 auto 2.5rem}
+.sc{width:100%;max-width:560px;margin:0 auto}
+.sb{display:flex;align-items:center;background:rgba(255,255,255,.05);
+  border:1px solid var(--border-b);border-radius:14px;overflow:hidden;transition:border-color .3s,box-shadow .3s}
+.sb:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px var(--glow)}
+.gh-icon{padding:0 1rem;color:var(--muted);display:flex;align-items:center}
+#ui{flex:1;background:transparent;border:none;outline:none;color:var(--text);
+  font-size:1rem;font-family:var(--mono);padding:.9rem 0}
+#ui::placeholder{color:var(--muted)}
+.abtn{display:flex;align-items:center;gap:.5rem;background:var(--acc);color:#fff;border:none;
+  padding:.9rem 1.5rem;cursor:pointer;font-size:.95rem;font-weight:600;transition:background .2s}
+.abtn:hover{background:var(--acc2)}
+.abtn:disabled{opacity:.6;cursor:not-allowed}
+.hint{margin-top:.75rem;font-size:.85rem;color:var(--muted)}
+.hl{color:var(--acc2);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.hl:hover{color:var(--acc)}
+.pc{margin-top:2rem;width:100%;max-width:500px}
+.pbw{width:100%;height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+.pbf{height:100%;width:0%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:4px;transition:width .5s ease}
+.pl{margin-top:.75rem;font-size:.85rem;color:var(--text2);font-family:var(--mono)}
+.err{margin-top:1rem;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);
+  color:#fca5a5;padding:.75rem 1.5rem;border-radius:10px;font-size:.88rem;display:none}
+.strip{position:relative;z-index:1;display:flex;justify-content:center;gap:4rem;padding:3rem 2rem;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.si{text-align:center}
+.sn{display:block;font-size:2rem;font-weight:700;color:var(--acc2)}
+.sl{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.feat{position:relative;z-index:1;padding:6rem 2rem;max-width:1100px;margin:0 auto}
+.eye{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.15em;color:var(--acc);margin-bottom:.75rem}
+.st{font-size:2.2rem;font-weight:700;margin-bottom:3rem}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.25rem}
+.fc{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:all .2s}
+.fc:hover{background:var(--card-h);border-color:var(--border-b);transform:translateY(-3px)}
+.fi{font-size:1.75rem;margin-bottom:.75rem}
+.fc h3{font-size:1rem;font-weight:600;margin-bottom:.5rem}
+.fc p{font-size:.875rem;color:var(--text2);line-height:1.6}
+.how{position:relative;z-index:1;padding:6rem 2rem;max-width:1100px;margin:0 auto}
+.ps{display:flex;align-items:flex-start;gap:0;flex-wrap:wrap}
+.pst{flex:1;min-width:160px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.25rem}
+.pa{font-size:1.5rem;color:var(--acc);padding:1.5rem .5rem;align-self:center}
+.pn{font-size:.7rem;font-weight:700;color:var(--acc);font-family:var(--mono);margin-bottom:.5rem}
+.pst h4{font-size:.95rem;font-weight:600;margin-bottom:.4rem}
+.pst p{font-size:.8rem;color:var(--text2);line-height:1.5}
+footer{position:relative;z-index:1;text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.8rem;color:var(--muted)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@media(max-width:768px){.strip{gap:2rem;flex-wrap:wrap}.ps{flex-direction:column}.pa{display:none}nav{padding:1rem}.nl{display:none}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb o1"></div>
+<div class="orb o2"></div>
+<div class="orb o3"></div>
+
+<nav>
+  <div class="nb"><span class="bi">⬡</span><span>DevLens <span class="bai">AI</span></span></div>
+  <div class="nl">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="badge"><span class="dot"></span>Powered by Local LLM · No paid APIs</div>
+  <h1>Analyze Any<br/><span class="gt">GitHub Profile</span><br/>with AI</h1>
+  <p class="sub">Drop a GitHub username. Get a complete developer profile — skills, project rankings, internship readiness, career roadmap, and more.</p>
+
+  <div class="sc">
+    <div class="sb" id="searchBox">
+      <span class="gh-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      </span>
+      <input type="text" id="ui" placeholder="Enter GitHub username..." autocomplete="off" spellcheck="false"/>
+      <button class="abtn" id="abtn" onclick="go()"><span>Analyze</span><span>→</span></button>
+    </div>
+    <p class="hint">Try: <span class="hl" onclick="demo('torvalds')">torvalds</span> · <span class="hl" onclick="demo('tiangolo')">tiangolo</span> · <span class="hl" onclick="demo('karpathy')">karpathy</span></p>
+  </div>
+
+  <div class="pc" id="pc" style="display:none">
+    <div class="pbw"><div class="pbf" id="pbf"></div></div>
+    <p class="pl" id="pl">Starting...</p>
+  </div>
+  <div class="err" id="err"></div>
+</section>
+
+<section class="strip">
+  <div class="si"><span class="sn">20+</span><span class="sl">AI Features</span></div>
+  <div class="si"><span class="sn">100%</span><span class="sl">Local & Private</span></div>
+  <div class="si"><span class="sn">0</span><span class="sl">Paid APIs</span></div>
+  <div class="si"><span class="sn">∞</span><span class="sl">Profiles</span></div>
+</section>
+
+<section class="feat" id="features">
+  <div class="eye">What DevLens does</div>
+  <h2 class="st">Everything in one shot</h2>
+  <div class="fg">
+    <div class="fc"><div class="fi">🧠</div><h3>AI Repo Analysis</h3><p>Every repo gets purpose, architecture, complexity, quality, and originality scores from local LLM.</p></div>
+    <div class="fc"><div class="fi">📡</div><h3>Skill Radar</h3><p>Beautiful radar chart across Programming, AI/ML, Backend, Frontend, DevOps, Database and more.</p></div>
+    <div class="fc"><div class="fi">💼</div><h3>Internship Readiness</h3><p>Scores 0–100 for Backend, Frontend, AI, ML, Data Science, Software Engineering roles.</p></div>
+    <div class="fc"><div class="fi">🗺️</div><h3>Career Roadmap</h3><p>Personalized next steps, books, courses, projects and timeline based on your current skills.</p></div>
+    <div class="fc"><div class="fi">🏆</div><h3>Repo Rankings</h3><p>Most popular, most complex, best documented, most original — ranked automatically.</p></div>
+    <div class="fc"><div class="fi">📝</div><h3>README Generator</h3><p>AI writes a professional README.md for any of your repos with one click.</p></div>
+    <div class="fc"><div class="fi">🔍</div><h3>Repo Search</h3><p>Search repos by intent — "show ML projects" or "FastAPI repos" and get smart results.</p></div>
+    <div class="fc"><div class="fi">📅</div><h3>Dev Timeline</h3><p>Visual growth chart showing your repository and language evolution over time.</p></div>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <div class="eye">The pipeline</div>
+  <h2 class="st">How it works</h2>
+  <div class="ps">
+    <div class="pst"><div class="pn">01</div><h4>GitHub Data Fetch</h4><p>Pulls profile, all repos, READMEs, languages, commit counts via GitHub API</p></div>
+    <div class="pa">→</div>
+    <div class="pst"><div class="pn">02</div><h4>Local LLM Analysis</h4><p>Ollama + Llama3 analyzes each repo for purpose, architecture, complexity</p></div>
+    <div class="pa">→</div>
+    <div class="pst"><div class="pn">03</div><h4>Skill Detection</h4><p>ML-based skill mapping with confidence scores across 25+ technologies</p></div>
+    <div class="pa">→</div>
+    <div class="pst"><div class="pn">04</div><h4>Dashboard Generated</h4><p>Interactive charts, rankings, roadmap, radar — everything in one view</p></div>
+  </div>
+</section>
+
+<footer>DevLens AI — Built for developers, by developers. 100% local. 100% private.</footer>
+
+<script>
+function demo(u){document.getElementById('ui').value=u}
+document.getElementById('ui').addEventListener('keydown',function(e){if(e.key==='Enter')go()});
+async function go(){
+  const u=document.getElementById('ui').value.trim();
+  if(!u){document.getElementById('searchBox').style.animation='shake .4s';setTimeout(()=>document.getElementById('searchBox').style.animation='',400);return}
+  const btn=document.getElementById('abtn');
+  btn.disabled=true;btn.querySelector('span').textContent='Analyzing...';
+  document.getElementById('pc').style.display='block';
+  document.getElementById('err').style.display='none';
+  const es=new EventSource('/api/progress/'+u);
+  es.onmessage=function(e){
+    try{const d=JSON.parse(e.data);
+      if(d.done){es.close();return}
+      if(d.pct!=null)document.getElementById('pbf').style.width=d.pct+'%';
+      if(d.step)document.getElementById('pl').textContent=d.step;
+    }catch(_){}
+  };
+  try{
+    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,force_refresh:false})});
+    const j=await r.json();
+    if(!r.ok)throw new Error(j.detail||'Analysis failed');
+    es.close();
+    document.getElementById('pbf').style.width='100%';
+    document.getElementById('pl').textContent='Redirecting to dashboard...';
+    setTimeout(()=>window.location.href='/dashboard/'+u,600);
+  }catch(err){
+    es.close();
+    document.getElementById('pc').style.display='none';
+    const e=document.getElementById('err');e.textContent='⚠ '+err.message;e.style.display='block';
+    btn.disabled=false;btn.querySelector('span').textContent='Analyze';
+  }
+}
+</script>
+</body>
+</html>
